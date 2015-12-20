@@ -4,7 +4,7 @@
 #
 
 function usg_msg() {
-echo -e "\nUsage:\n\techo ${0##*/} space-separated-PDF-files output.pdf\n"
+echo -e "\nUsage:\n\t${0##*/} space-separated-PDF-files output.pdf\n"
 echo Merges the PDF files into an output.pdf,
 echo adding all the pages of all the files.
 }
