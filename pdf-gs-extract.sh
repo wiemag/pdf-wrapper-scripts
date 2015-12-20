@@ -1,15 +1,16 @@
 #!/bin/bash
 # Extract a range of pages with gs
-# Copy from http://www.linuxjournal.com/content/tech-tip-extract-pages-pdf
+# Modified from http://www.linuxjournal.com/content/tech-tip-extract-pages-pdf
 
 # Checking dependencies
 hash gs 2>/dev/null || {
 	echo Missing dependency: gs
 	exit 1
 }
-
-function pdfpextr()
-{
+function usage(){
+	echo -e "\n${0##*/} input_file first_page last_page\n"
+}
+function pdfpextr(){
  # this function uses 3 arguments:
  # $1 is the input file
  # $2 is the first page of the range to extract
@@ -22,4 +23,4 @@ function pdfpextr()
     "${1}"
 }
 
-pdfpextr "$1" $2 $3 	#file, start page, end page
+[[ $# -eq 3 ]] && pdfpextr "$1" $2 $3 || usage
