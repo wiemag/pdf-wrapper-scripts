@@ -1,35 +1,37 @@
 #!/bin/bash
-VERSION="0.2" 		# 2013-10-01, Correction of $path 
+VERSION="1.0" 		# 2015-12-20
 function usage () {
-	echo -e "\nUsage:\n\t\e[1m${0##*/} -c CompressionType filename\e[0m\n"
+	echo -e "\nUsage:\n\t\e[1m${0##*/} [-t Threshold] [-c CompressionType] filename\e[0m\n"
+	echo -e "The 'Threshold' [0..100%] whitens/backens pixels."
+	echo -e "\tThe closer to 0%, the whiter the image."
 	echo -e "The 'CompressionType' as defined for imagemagick's convert:"
 	echo -e "\tGroup4 (default), Fax, JPEG, JPEG2000, Lossless"
 	echo -e "\tLZW, RLE, ZIP, BZip, or just None."
 	echo -e "Command \n\t\e[1mconvert -list compress\e[0m"
 	echo -e "will show a full list of compression types.\n"
 }
-CMPR="Group4"		# Compression type
-while getopts "c:hv" flag
+CMPR="-compress Group4"		# Compression type
+THRE="" 					# Threshold
+while getopts "t:c:hv" flag
 do
     case "$flag" in
 		h) usage; exit;;
 		v) echo -e "${0##*/} version ${VERSION}" && exit;;
-		c) CMPR="$OPTARG";;
+		t) THRE="-threshold $OPTARG";;
+		c) CMPR="-compress $OPTARG";;
 	esac
 done
 # Remove the options parsed above.
 shift `expr $OPTIND - 1`
-(( $# )) || { usage; echo -e "\e[31;1mMissing file name.\e[0m" ; exit;}
+(( $# )) || { usage; exit;}
 
-path=${1%/*}
-[[ "$path" = "$1" ]] && path="."
-f=${1##*/}
-f=${f%.*}
-if [[ -e "$1" ]]; then
-	convert "$1" -compress "$CMPR" -monochrome -enhance "/tmp/${f}.tif"
-	convert "/tmp/${f}.tif" "${path}/${f}.pdf"
-	rm "/tmp/${f}.tif"
-else
-	usage
-	echo File $1 does not exist
-fi
+while [[ $# -gt 0 ]]; do
+	f="$1"
+	if [[ -e "$f" ]]; then
+		echo convert $f $THRE $CMPR -enhance -monochrome "${f%.*}.pdf"
+		convert "$f" $THRE $CMPR -enhance -monochrome "${f%.*}.pdf"
+	else
+		[[ "$f" =~ '*' ]] && echo Files $f do not exist. || echo File $f does not exist.
+	fi
+	shift
+done

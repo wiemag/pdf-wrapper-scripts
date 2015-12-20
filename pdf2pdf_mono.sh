@@ -1,6 +1,7 @@
 #!/bin/bash
 # Imagemagick's convert wrapper.
 # Converts PDF's into monochrome PDF's.
+# qpdf - optional dependecy
 VERSION="1.0" 		# 2015-12-20
 function usage () {
 	echo -e "\nUsage:\n\t\e[1m${0##*/} [-options] FileName[.pdf]\e[0m\n"
@@ -65,19 +66,14 @@ while [[ $# -gt 0 ]]; do
 		ext=${f##*.}; [[ ${ext,,} = 'pdf' ]] && nf=${nf%.*} #${ext,,} lowercase
 		nf=${nf}_mono.pdf
 		bn=${f##*/}
-		case $LANG in
-			pl*) echo Zaczynam pracować!;;
-			*) echo Working!
-		esac
 		echo convert $VERB $SIZE -density $DENS $THRE "$f" -compress $CMPR -monochrome "$nf"
 		convert $VERB $SIZE -density $DENS $THRE "$f" -compress $CMPR -monochrome /tmp/"$bn"
-		# Remove meta data
+		# If qpdf installed, remove meta data.
 		hash qpdf 2>/dev/null && { qpdf -empty -pages /tmp/"$bn" 1-z -- "${nf%.pdf}_meta.pdf";
 			rm /tmp/"$bn";} || mv /tmp/"$bn" "$nf"
 
 	else
-		usage
-		[[ "$f" =~ '*' ]] && echo Files "$f" do not exist. || echo File $f does not exist.
+		[[ "$f" =~ '*' ]] && echo Files $f do not exist. || echo File $f does not exist.
 	fi
 	shift
 done;
