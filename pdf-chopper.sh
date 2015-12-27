@@ -3,7 +3,7 @@
 # Chopping a PDF into chapters
 # by dif (wm) 2015-09-03
 # A wrapper for qpdf
-VERSION=1.0 	# 2015-09-03
+VERSION=1.01 	# 2015-09-03
 
 function usemsg () {
 	echo Syntax:
@@ -68,7 +68,7 @@ i=${PAGES[$((n - 1))]}
 ((i++))
 
 #Removing an out-of-range page number
-while [ $i -gt $(qpdf ${f}.pdf --show-npages) ]; do
+while [ $i -gt $(qpdf "${f}.pdf" --show-npages) ]; do
 	unset PAGES[${#PAGES[@]}-1]
 	n=${#PAGES[@]}
 	i=${PAGES[$((n - 1))]}
@@ -82,6 +82,6 @@ for ((i=0; i<$n ; i++)); do
 	p0=$((${PAGES[$i]} +1))
 	j=$((i + 1))
 	p1=${PAGES[$j]}
-	qpdf -empty --pages ${f}.pdf ${p0}-${PAGES[$j]} -- pdf_$(printf "%0*d" $PAD $p0).pdf
+	qpdf -empty --pages "${f}.pdf" ${p0}-${PAGES[$j]} -- pdf_$(printf "%0*d" $PAD $p0).pdf
 	echo Pages ${p0}-${PAGES[$j]} -- pdf_$(printf "%0*d" $PAD $p0).pdf
 done
