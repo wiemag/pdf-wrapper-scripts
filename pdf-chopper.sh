@@ -3,7 +3,7 @@
 # Chopping a PDF into chapters
 # by dif (wm) 2015-09-03
 # A wrapper for qpdf
-VERSION=1.01 	# 2015-09-03
+VERSION=1.02 	# 2016-01-01, pdftk as optional dependency to fix some PDF's
 
 function usemsg () {
 	echo Syntax:
@@ -78,6 +78,13 @@ done
 PAD=${#i}				# Padding/leading zeros
 PAGES=(${PAGES[@]} z) 	# z is the last page
 
+g="${f}.pdf"
+qpdf --check "${f}.pdf" >/dev/null 2>&1 || {
+	hash pdftk 2>/dev/null &&
+		{ f="/tmp/${f##*/}_"; pdftk "${g}" output "${f}.pdf";} || \
+			{ echo "${f}.pdf" has an internal error, which cannot be repaired by qpdf.; exit 1;}
+	}
+
 for ((i=0; i<$n ; i++)); do
 	p0=$((${PAGES[$i]} +1))
 	j=$((i + 1))
@@ -85,3 +92,5 @@ for ((i=0; i<$n ; i++)); do
 	qpdf -empty --pages "${f}.pdf" ${p0}-${PAGES[$j]} -- pdf_$(printf "%0*d" $PAD $p0).pdf
 	echo Pages ${p0}-${PAGES[$j]} -- pdf_$(printf "%0*d" $PAD $p0).pdf
 done
+
+[[ "$g" == "${f}.pdf" ]] || rm ${f}.pdf

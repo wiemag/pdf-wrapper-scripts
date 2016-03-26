@@ -18,6 +18,7 @@ Small utility bash scripts.
 - pdf-gs-extract.sh
 - pdf-gs-gray.sh
 - pdf-gs-decrypt.sh
+- pdfcrop-wm.sh       - a pdfcrop wrapper (checks files and reminds usage)
 
 INSTALLATION
 
@@ -27,5 +28,6 @@ Additional dependencies may include
 - graphycsmagick
 - gs
 - poppler
+- texlive-core
 
 No installation, just download and use.
