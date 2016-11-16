@@ -2,7 +2,7 @@
 # Imagemagick's convert wrapper.
 # Converts PDF's into monochrome PDF's.
 # qpdf - optional dependecy
-VERSION="1.0" 		# 2015-12-20
+VERSION="1.3"
 function usage () {
 	echo -e "\nUsage:\n\t\e[1m${0##*/} [-options] FileName[.pdf]\e[0m\n"
 	echo -e "Produces a monochrome PDF named:  \e[33;1mFileName_mono.pdf\e[0m\n"
@@ -25,6 +25,9 @@ Options:
       Values (0%..100%). Try 80% or 90%.
 -r Size
       Resize the output according to the Size(%) parameter.
+-m
+      Limit memory to 2GiB and
+      set directory ~/tmp/tmp for temporary files.
 -v    makes the output verbose.
 OPCJE
 echo -e "\n'\e[1m-monochrome\e[0m' option is hardcoded into the conversion command.\n"
@@ -34,9 +37,11 @@ declare -i DENS 	# Debsity is supposed to be integer.
 VERB="" 			# Verbose? No. (default)
 THRE="" 			# Threshold (whiten out or enhance)
 SIZE="" 			# Resize (0%..100%]
+MEM="" 				# Will memory be limited, and temp-files directory created?
+TMPD="${HOME}/tmp/tmp"
 
 
-while getopts "vd:c:t:r:hV" flag
+while getopts "vd:c:t:r:mhV" flag
 do
     case "$flag" in
     	v) VERB="-verbose";;
@@ -44,6 +49,7 @@ do
 		c) CMPR="$OPTARG";;
 		t) THRE="-threshold $OPTARG";;
 		r) SIZE="-resize $OPTARG";;
+		m) MEM="monitor -define registry:temporary-path=$TMPD -limit memory 6GiB -limit map 7GiB";;
 		h) usage; exit;;
 		V) echo -e "${0##*/} version ${VERSION}" && exit;;
 	esac
@@ -57,7 +63,8 @@ DENS=${DENS:-288} 		# the default density of 288
 CMPR=${CMPR:-Group4} 	# the default compression of Group4
 CMPRList=$(echo $(convert -list compress))
 [[ $CMPRList =~ (^| )$CMPR($| ) ]] || { echo Wrong compression type.; exit 1;}
-
+CMPR='-compress '$CMPR
+echo $DENS
 while [[ $# -gt 0 ]]; do
 	f=${1}
 	[[ -f "$f" ]] || f=${f}.pdf 	# As the pdf extension is optional.
@@ -66,12 +73,13 @@ while [[ $# -gt 0 ]]; do
 		ext=${f##*.}; [[ ${ext,,} = 'pdf' ]] && nf=${nf%.*} #${ext,,} lowercase
 		nf=${nf}_mono.pdf
 		bn=${f##*/}
-		echo convert $VERB $SIZE -density $DENS $THRE "$f" -compress $CMPR -monochrome "$nf"
-		convert $VERB $SIZE -density $DENS $THRE "$f" -compress $CMPR -monochrome /tmp/"$bn"
+		echo convert $MEM $VERB $SIZE -density $DENS $THRE "$f" $CMPR -monochrome "$nf"
+		convert $MEM $VERB $SIZE -density $DENS $THRE "$f" $CMPR -monochrome /tmp/"$bn"
+#		echo convert $MEM $VERB $SIZE -density $DENS $THRE "$f" tif:- \| convert $CMPR -monochrome "$nf"
+#		convert $MEM $VERB $SIZE -density $DENS $THRE "$f" tif:- | convert - -monochrome $CMPR /tmp/"$bn"
 		# If qpdf installed, remove meta data.
 		hash qpdf 2>/dev/null && { qpdf -empty -pages /tmp/"$bn" 1-z -- "${nf%.pdf}_meta.pdf";
 			rm /tmp/"$bn";} || mv /tmp/"$bn" "$nf"
-
 	else
 		[[ "$f" =~ '*' ]] && echo Files $f do not exist. || echo File $f does not exist.
 	fi
