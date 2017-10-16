@@ -9,6 +9,8 @@ Small utility bash scripts.
 - pdf-chopper.sh      - splitting PDF's into smaller PDF's (qpdf based)
 - pdf-tk-chopper.sh   - splitting PDF's into smaller PDF's (pdftk based)
 - pdf-joiner.sh       - joining DPF's into a single PDF (qpdf based)
+- pdf-repair.sh       - repair corrupted PDF (gs/pdftk/cairo)
+- pdf-add-meta_data.sh - add meta data (e.g. Title/Author) to PDF
 - pdf-rm-meta.sh      - remove meta data from a pdf file (qpdf based)
 - pdf-tk-rm-meta.sh   - the same as above, different tool used (pdftk based)
 - pdf-a4.sh           - resize into the A4 format
@@ -19,6 +21,7 @@ Small utility bash scripts.
 - pdf-gs-gray.sh
 - pdf-gs-decrypt.sh
 - pdfcrop-wm.sh       - a pdfcrop wrapper (checks files and reminds usage)
+- pdf-toc_gs.sh       - add a postscript-style table of contents with gs
 
 INSTALLATION
 

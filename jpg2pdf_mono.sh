@@ -1,4 +1,5 @@
 #!/bin/bash
+#convert -monitor -limit memory 6GiB -define registry:temporary-path=/home/wm/.tmp 0-St.F4507_Zusammenstellung.jpg -threshold 75% -compress Group4 -enhance -monochrome 0-St.F4507_Zusammenstellung.pdf
 VERSION="1.0" 		# 2015-12-20
 function usage () {
 	echo -e "\nUsage:\n\t\e[1m${0##*/} [-t Threshold] [-c CompressionType] filename\e[0m\n"

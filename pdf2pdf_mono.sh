@@ -2,7 +2,7 @@
 # Imagemagick's convert wrapper.
 # Converts PDF's into monochrome PDF's.
 # qpdf - optional dependecy
-VERSION="1.3"
+VERSION="1.5" # -compress Group4 rather than -compress Fax again; +other
 function usage () {
 	echo -e "\nUsage:\n\t\e[1m${0##*/} [-options] FileName[.pdf]\e[0m\n"
 	echo -e "Produces a monochrome PDF named:  \e[33;1mFileName_mono.pdf\e[0m\n"
@@ -14,7 +14,7 @@ Options:
       Default density: 288. Sane values [144..400]."
 -c CompressionType
       Use the types as defined for imagemagick's convert:
-      Group4 (default), Fax, JPEG, JPEG2000, Lossless
+      Group4, Fax (default), JPEG, JPEG2000, Lossless
       LZW, RLE, ZIP, BZip, or just None.
       Command
          convert -list compress
@@ -26,8 +26,8 @@ Options:
 -r Size
       Resize the output according to the Size(%) parameter.
 -m
-      Limit memory to 2GiB and
-      set directory ~/tmp/tmp for temporary files.
+      Limit memory to 6GiB and
+      set directory ~/.tmp for temporary files.
 -v    makes the output verbose.
 OPCJE
 echo -e "\n'\e[1m-monochrome\e[0m' option is hardcoded into the conversion command.\n"
@@ -38,7 +38,7 @@ VERB="" 			# Verbose? No. (default)
 THRE="" 			# Threshold (whiten out or enhance)
 SIZE="" 			# Resize (0%..100%]
 MEM="" 				# Will memory be limited, and temp-files directory created?
-TMPD="${HOME}/tmp/tmp"
+TMPD="${HOME}/.tmp" # Temporary path set for big files
 
 
 while getopts "vd:c:t:r:mhV" flag
@@ -49,22 +49,23 @@ do
 		c) CMPR="$OPTARG";;
 		t) THRE="-threshold $OPTARG";;
 		r) SIZE="-resize $OPTARG";;
-		m) MEM="monitor -define registry:temporary-path=$TMPD -limit memory 6GiB -limit map 7GiB";;
+		m) MEM="-monitor -define registry:temporary-path=$TMPD -limit memory 6GiB -limit map 6GiB"; [[ -e $TMPD ]] || { mkdir -p $TMPD;} ;;
 		h) usage; exit;;
 		V) echo -e "${0##*/} version ${VERSION}" && exit;;
-	esac
+    esac
 done
 # Remove the options parsed above.
 shift `expr $OPTIND - 1`
 (( $# )) || { usage; exit;}
 
 DENS=${DENS:-288} 		# the default density of 288
-((DENS)) || DENS=288 	# If wrong value, assume the default value.
+((DENS)) || { DENS=288; echo Wrong density; the default one assumed.;}
 CMPR=${CMPR:-Group4} 	# the default compression of Group4
 CMPRList=$(echo $(convert -list compress))
 [[ $CMPRList =~ (^| )$CMPR($| ) ]] || { echo Wrong compression type.; exit 1;}
 CMPR='-compress '$CMPR
-echo $DENS
+echo density=$DENS
+echo compress=$CMPR
 while [[ $# -gt 0 ]]; do
 	f=${1}
 	[[ -f "$f" ]] || f=${f}.pdf 	# As the pdf extension is optional.
@@ -73,10 +74,10 @@ while [[ $# -gt 0 ]]; do
 		ext=${f##*.}; [[ ${ext,,} = 'pdf' ]] && nf=${nf%.*} #${ext,,} lowercase
 		nf=${nf}_mono.pdf
 		bn=${f##*/}
-		echo convert $MEM $VERB $SIZE -density $DENS $THRE "$f" $CMPR -monochrome "$nf"
+		echo convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" $CMPR "$nf"
 		convert $MEM $VERB $SIZE -density $DENS $THRE "$f" $CMPR -monochrome /tmp/"$bn"
-#		echo convert $MEM $VERB $SIZE -density $DENS $THRE "$f" tif:- \| convert $CMPR -monochrome "$nf"
-#		convert $MEM $VERB $SIZE -density $DENS $THRE "$f" tif:- | convert - -monochrome $CMPR /tmp/"$bn"
+#		echo convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" tif:- \| convert $CMPR "$nf"
+#		convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" tif:- | convert - $CMPR /tmp/"$bn"
 		# If qpdf installed, remove meta data.
 		hash qpdf 2>/dev/null && { qpdf -empty -pages /tmp/"$bn" 1-z -- "${nf%.pdf}_meta.pdf";
 			rm /tmp/"$bn";} || mv /tmp/"$bn" "$nf"

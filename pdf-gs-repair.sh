@@ -6,5 +6,5 @@ REPAIRED=${CORRUPTED%.pdf}
 REPAIRED=${REPAIRED%.PDF}_repaired.pdf
 if [[ -f "$CORRUPTED" ]]; then
 	gs -o "$REPAIRED" \
-	-sDEVICE=pdfwrite -dPDFSETTINGS=/prepress "$CORRUPTED"
+	-sDEVICE=pdfwrite -dPDFSETTINGS=/default "$CORRUPTED"
 fi
