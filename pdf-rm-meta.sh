@@ -7,30 +7,29 @@ hash qpdf 2>/dev/null || {
 	exit 1
 }
 
-VERSION=2.0
+VERSION=2.01
 USAGE="\nThe script removes all meta data, including the table of contents.
 \n\nUsage:\n
 \t${0##*/} [-o OUTPUT] [-c] input1 [input2 [input3 [...]]]\n
 \n-o\tIf used, only the first input file is processed.\n
 \tIf not used, _no-meta.pdf suffix added to input file names.
-\n-c\tRename OUTPUT back into INPUT orginal file name.\n"
+\n-c|-i\tClean/Inplace. Rename OUTPUT back into INPUT orginal file name.\n"
 OUTMODE=0
-INPLACE=0
 
 # Parse dash-options
-while getopts o:c?hv OPT; do
+while getopts o:ci?hv OPT; do
     case "$OPT" in
         h|\?) echo -e $USAGE; exit;;
         v) echo ${0##*/}, version $VERSION; exit;;
         o) OUTPUT=$OPTARG; OUTMODE=1;;
-        c) CLEAN=1;;
+        c|i) CLEAN=1;;
     esac
 done
 shift $(expr $OPTIND - 1)
 
 [[ $# -lt 1 ]]  && { echo -e $USAGE; exit;}
 
-for INPUT in $@; do
+for INPUT in "$@"; do
 	if [[ -f "$INPUT" ]]; then
 		if [[ $(file -b "$INPUT" |cut -d\  -f1) == 'PDF' ]]; then
 			[[ $OUTMODE -eq 0 ]] && OUTPUT="${INPUT%.pdf}_no-meta.pdf"

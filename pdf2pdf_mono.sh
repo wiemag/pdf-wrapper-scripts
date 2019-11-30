@@ -2,7 +2,9 @@
 # Imagemagick's convert wrapper.
 # Converts PDF's into monochrome PDF's.
 # qpdf - optional dependecy
-VERSION="1.5" # -compress Group4 rather than -compress Fax again; +other
+VERSION="1.7" # See TempPDF, TempPS
+tty -s && TERM=1 || TERM=0 	# Script run from a terminal
+
 function usage () {
 	echo -e "\nUsage:\n\t\e[1m${0##*/} [-options] FileName[.pdf]\e[0m\n"
 	echo -e "Produces a monochrome PDF named:  \e[33;1mFileName_mono.pdf\e[0m\n"
@@ -46,26 +48,34 @@ do
     case "$flag" in
     	v) VERB="-verbose";;
     	d) DENS="$OPTARG";;
-		c) CMPR="$OPTARG";;
-		t) THRE="-threshold $OPTARG";;
-		r) SIZE="-resize $OPTARG";;
-		m) MEM="-monitor -define registry:temporary-path=$TMPD -limit memory 6GiB -limit map 6GiB"; [[ -e $TMPD ]] || { mkdir -p $TMPD;} ;;
-		h) usage; exit;;
-		V) echo -e "${0##*/} version ${VERSION}" && exit;;
+	c) CMPR="$OPTARG";;
+	t) THRE="-threshold $OPTARG";;
+	r) SIZE="-resize $OPTARG";;
+	m) MEM="-monitor -define registry:temporary-path=$TMPD -limit memory 6GiB -limit map 6GiB"; [[ -e $TMPD ]] || { mkdir -p $TMPD;} ;;
+	h) usage; exit;;
+	V) echo -e "${0##*/} version ${VERSION}" && exit;;
     esac
 done
 # Remove the options parsed above.
 shift `expr $OPTIND - 1`
 (( $# )) || { usage; exit;}
 
+# If the script is not run from a Terminal, set the threshold to 78%.
 DENS=${DENS:-288} 		# the default density of 288
 ((DENS)) || { DENS=288; echo Wrong density; the default one assumed.;}
 CMPR=${CMPR:-Group4} 	# the default compression of Group4
 CMPRList=$(echo $(convert -list compress))
 [[ $CMPRList =~ (^| )$CMPR($| ) ]] || { echo Wrong compression type.; exit 1;}
 CMPR='-compress '$CMPR
-echo density=$DENS
-echo compress=$CMPR
+[[ $TERM -eq 1 ]] && {
+	echo density=${DENS};
+	echo compress=${CMPR};
+} || {
+	THRE="-threshold 78%";
+	notify-send "${0##*/} ${1}" "Options: ${THRE} -density ${DENS} ${CMPR}" --icon=dialog-information;
+}
+TempPDF=$(mktemp)
+TempPS=$(mktemp)
 while [[ $# -gt 0 ]]; do
 	f=${1}
 	[[ -f "$f" ]] || f=${f}.pdf 	# As the pdf extension is optional.
@@ -74,13 +84,23 @@ while [[ $# -gt 0 ]]; do
 		ext=${f##*.}; [[ ${ext,,} = 'pdf' ]] && nf=${nf%.*} #${ext,,} lowercase
 		nf=${nf}_mono.pdf
 		bn=${f##*/}
-		echo convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" $CMPR "$nf"
-		convert $MEM $VERB $SIZE -density $DENS $THRE "$f" $CMPR -monochrome /tmp/"$bn"
+		[[ $TERM -eq 1 ]] && {
+			echo DEBUG: \$nb=${bn};
+			echo convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" $CMPR "$nf";
+		}
+		convert $MEM $VERB $SIZE -density $DENS $THRE "$f" $CMPR -monochrome "$TempPDF"
 #		echo convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" tif:- \| convert $CMPR "$nf"
-#		convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" tif:- | convert - $CMPR /tmp/"$bn"
+#		convert $MEM $VERB $SIZE -density $DENS $THRE -monochrome "$f" tif:- | convert - $CMPR "$TempPDF"
+		# If error in resultant file, repair it by repackaging it with pdftops and ps2pdf.
+		gs -dBATCH -dNOPAUSE -sDEVICE=nullpage "$TempPDF" |grep 'Error\|error' && {
+			pdftops "$TempPDF" "$TempPS";
+			ps2pdf "$TempPS" "$TempPDF";
+			rm "$TempPS";
+		}
 		# If qpdf installed, remove meta data.
-		hash qpdf 2>/dev/null && { qpdf -empty -pages /tmp/"$bn" 1-z -- "${nf%.pdf}_meta.pdf";
-			rm /tmp/"$bn";} || mv /tmp/"$bn" "$nf"
+		hash qpdf 2>/dev/null && { qpdf -empty -pages "$TempPDF" 1-z -- "${nf%.pdf}_meta.pdf";
+			rm "$TempPDF";
+		} || mv "$TempPDF" "$nf"
 	else
 		[[ "$f" =~ '*' ]] && echo Files $f do not exist. || echo File $f does not exist.
 	fi

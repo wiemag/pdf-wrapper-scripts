@@ -1,9 +1,9 @@
 #!/bin/bash
 # The pdftk package required!
 #
-VERSION="1.00" 		# 2015-12-27
+VERSION="1.01" 		# 2017-11-29
 function usage () {
-echo -ne "\nUsage:\n\n\e[1m  ${0##*/} [-p page_range] [-r rot_direction]"
+echo -ne "\nUsage:\n\n\e[1m  ${0##*/} [i|d] [-p page_range] [-r rot_direction]"
 echo -e " FileName[.pdf] | -h | -V\e[0m\n"
 echo A simplified and very limited version of \'pdftk\'
 echo Rotates page_range pages acc. to rot_direction \(right, left, down\).
@@ -16,6 +16,7 @@ echo -e "   Note: If a page number is repeated, the page is rotated again."
 echo -e "\e[1m-r\e[0m rot_direction :  Defaults to right (east)."
 echo -e "\e[1m-h\e[0m               :  Prints this help message."
 echo -e "\e[1m-V\e[0m               :  Prints the script version number."
+echo -e "\e[1m-i|-d\e[0m            :  An inplace rotation, modifying the input file."
 }
 
 hash pdftk 2>/dev/null || {
@@ -26,13 +27,15 @@ hash pdftk 2>/dev/null || {
 PAGES='1-end'
 ROTDIR='right'
 ROTOPTS=''
-while getopts "p:r:hV" flag
+INPLACE=0
+while getopts "p:r:hVdi" flag
 do
     case "$flag" in
 		p) PAGES="${OPTARG//,/ }";; # Replace comas with spaces.
 		r) ROTDIR="$OPTARG";;
 		h) usage; exit;;
 		V) echo -e "${0##*/} version ${VERSION}" && exit;;
+		d|i) INPLACE=1;;
 	esac
 done
 for p in $PAGES; do
@@ -54,6 +57,7 @@ for f in "$@"; do
 		bn=${f##*/}
 		echo pdftk \"$f\" rotate "${PAGES}${ROTDIR}" output \"$nf\"
 		pdftk "$f" rotate $ROTOPTS output "$nf"
+		[[ $INPLACE -eq 1 ]] && mv "$nf" "$f" || :
 	else
 		usage
 		echo -e "\n\e[31;1mFile $f does not exist.\e[0m"
